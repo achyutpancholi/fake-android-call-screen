@@ -1,7 +1,9 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Phone, PhoneOff, User, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import PhoneStyleSelector from './PhoneStyleSelector';
+import androidRingtone from '@/assets/sounds/android-ringtone.mp3';
+import iphoneRingtone from '@/assets/sounds/iphone-ringtone.mp3';
 
 interface Contact {
   name: string;
@@ -11,21 +13,35 @@ interface Contact {
 interface CallScreenProps {
   contact: Contact;
   onEnd: () => void;
+  phoneStyle: 'android' | 'iphone';
 }
 
-const CallScreen: React.FC<CallScreenProps> = ({ contact, onEnd }) => {
+const CallScreen: React.FC<CallScreenProps> = ({ contact, onEnd, phoneStyle }) => {
   const [callTimer, setCallTimer] = useState(0);
   const [isActive, setIsActive] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    let interval: number;
+    let intervalId: NodeJS.Timeout;
     if (isActive) {
-      interval = setInterval(() => {
+      intervalId = setInterval(() => {
         setCallTimer((timer) => timer + 1);
       }, 1000);
     }
-    return () => clearInterval(interval);
+    return () => clearInterval(intervalId);
   }, [isActive]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.play().catch(console.error);
+    }
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    };
+  }, []);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -38,10 +54,26 @@ const CallScreen: React.FC<CallScreenProps> = ({ contact, onEnd }) => {
     if (navigator.vibrate) {
       navigator.vibrate(200);
     }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
   };
 
+  const bgClass = phoneStyle === 'android' 
+    ? 'from-gray-900 to-gray-800'
+    : 'from-gray-800 via-gray-900 to-black';
+
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-gray-900 to-gray-800 flex flex-col items-center justify-between p-8 text-white">
+    <div className={cn(
+      "fixed inset-0 bg-gradient-to-b flex flex-col items-center justify-between p-8 text-white",
+      bgClass
+    )}>
+      <audio
+        ref={audioRef}
+        src={phoneStyle === 'android' ? androidRingtone : iphoneRingtone}
+        loop
+      />
       <div className="flex flex-col items-center mt-12 space-y-4">
         <div className="w-24 h-24 rounded-full bg-blue-500 flex items-center justify-center text-3xl font-bold">
           {contact.name.charAt(0).toUpperCase()}
@@ -94,6 +126,7 @@ const CallSimulator: React.FC = () => {
   const [number, setNumber] = useState('');
   const [showCall, setShowCall] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
+  const [phoneStyle, setPhoneStyle] = useState<'android' | 'iphone'>('android');
 
   useEffect(() => {
     localStorage.setItem('savedContacts', JSON.stringify(contacts));
@@ -125,11 +158,16 @@ const CallSimulator: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       {showCall && currentContact ? (
-        <CallScreen contact={currentContact} onEnd={endCall} />
+        <CallScreen 
+          contact={currentContact} 
+          onEnd={endCall} 
+          phoneStyle={phoneStyle}
+        />
       ) : (
         <div className="max-w-md mx-auto space-y-6">
           <form onSubmit={handleSaveContact} className="bg-white p-6 rounded-lg shadow-md space-y-4">
             <h2 className="text-2xl font-bold text-gray-800">New Contact</h2>
+            <PhoneStyleSelector value={phoneStyle} onChange={setPhoneStyle} />
             <div>
               <label className="block text-gray-700 mb-2">Name</label>
               <input
