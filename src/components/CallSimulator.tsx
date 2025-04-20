@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Phone, PhoneOff, User, Clock } from 'lucide-react';
+import { Phone, PhoneOff, User, Clock, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import PhoneStyleSelector from './PhoneStyleSelector';
 import androidRingtone from '@/assets/sounds/android-ringtone.mp3';
 import iphoneRingtone from '@/assets/sounds/iphone-ringtone.mp3';
+import { toast } from "@/hooks/use-toast";
 
 interface Contact {
   name: string;
@@ -60,14 +61,31 @@ const CallScreen: React.FC<CallScreenProps> = ({ contact, onEnd, phoneStyle }) =
     }
   };
 
-  const bgClass = phoneStyle === 'android' 
-    ? 'from-gray-900 to-gray-800'
-    : 'from-gray-800 via-gray-900 to-black';
+  const styles = {
+    android: {
+      container: "fixed inset-0 bg-gradient-to-b from-gray-900 to-gray-800",
+      avatar: "w-24 h-24 rounded-full bg-blue-500",
+      button: "w-16 h-16 rounded-full",
+      name: "text-2xl font-bold text-white",
+      number: "text-gray-300",
+      timer: "text-gray-300",
+    },
+    iphone: {
+      container: "fixed inset-0 bg-gradient-to-b from-gray-800 via-gray-900 to-black",
+      avatar: "w-24 h-24 rounded-full bg-gray-600",
+      button: "w-16 h-16 rounded-full backdrop-blur-md bg-white/10",
+      name: "text-3xl font-semibold text-white",
+      number: "text-gray-400 text-lg",
+      timer: "text-gray-400",
+    }
+  };
+
+  const currentStyle = styles[phoneStyle];
 
   return (
     <div className={cn(
-      "fixed inset-0 bg-gradient-to-b flex flex-col items-center justify-between p-8 text-white",
-      bgClass
+      "flex flex-col items-center justify-between p-8 text-white",
+      currentStyle.container
     )}>
       <audio
         ref={audioRef}
@@ -75,13 +93,16 @@ const CallScreen: React.FC<CallScreenProps> = ({ contact, onEnd, phoneStyle }) =
         loop
       />
       <div className="flex flex-col items-center mt-12 space-y-4">
-        <div className="w-24 h-24 rounded-full bg-blue-500 flex items-center justify-center text-3xl font-bold">
+        <div className={cn(
+          "flex items-center justify-center text-3xl font-bold",
+          currentStyle.avatar
+        )}>
           {contact.name.charAt(0).toUpperCase()}
         </div>
-        <h2 className="text-2xl font-bold">{contact.name}</h2>
-        <p className="text-gray-300">{contact.number}</p>
+        <h2 className={currentStyle.name}>{contact.name}</h2>
+        <p className={currentStyle.number}>{contact.number}</p>
         {isActive && (
-          <div className="flex items-center space-x-2 text-gray-300">
+          <div className={cn("flex items-center space-x-2", currentStyle.timer)}>
             <Clock className="w-4 h-4" />
             <span>{formatTime(callTimer)}</span>
           </div>
@@ -93,13 +114,19 @@ const CallScreen: React.FC<CallScreenProps> = ({ contact, onEnd, phoneStyle }) =
           <>
             <button
               onClick={onEnd}
-              className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center"
+              className={cn(
+                currentStyle.button,
+                "bg-red-500 flex items-center justify-center"
+              )}
             >
               <PhoneOff className="w-8 h-8" />
             </button>
             <button
               onClick={handleAnswer}
-              className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center"
+              className={cn(
+                currentStyle.button,
+                "bg-green-500 flex items-center justify-center"
+              )}
             >
               <Phone className="w-8 h-8" />
             </button>
@@ -107,7 +134,10 @@ const CallScreen: React.FC<CallScreenProps> = ({ contact, onEnd, phoneStyle }) =
         ) : (
           <button
             onClick={onEnd}
-            className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center"
+            className={cn(
+              currentStyle.button,
+              "bg-red-500 flex items-center justify-center"
+            )}
           >
             <PhoneOff className="w-8 h-8" />
           </button>
@@ -153,6 +183,16 @@ const CallSimulator: React.FC = () => {
   const endCall = () => {
     setShowCall(false);
     setCurrentContact(null);
+  };
+
+  const handleDeleteContact = (index: number) => {
+    const updatedContacts = [...contacts];
+    updatedContacts.splice(index, 1);
+    setContacts(updatedContacts);
+    toast({
+      title: "Contact deleted",
+      description: "The contact has been removed from your list.",
+    });
   };
 
   return (
@@ -208,12 +248,20 @@ const CallSimulator: React.FC = () => {
                     <p className="font-medium">{contact.name}</p>
                     <p className="text-sm text-gray-600">{contact.number}</p>
                   </div>
-                  <button
-                    onClick={() => startCall(contact)}
-                    className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600"
-                  >
-                    <Phone className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => startCall(contact)}
+                      className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600"
+                    >
+                      <Phone className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteContact(index)}
+                      className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
