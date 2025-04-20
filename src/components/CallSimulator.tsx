@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Phone, PhoneOff, User, Clock, Trash2, ArrowRight } from 'lucide-react';
+import { Phone, PhoneOff, User, Clock, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Slider } from "@/components/ui/slider";
 import PhoneStyleSelector from './PhoneStyleSelector';
 import androidRingtone from '@/assets/sounds/android-ringtone.mp3';
 import iphoneRingtone from '@/assets/sounds/iphone-ringtone.mp3';
@@ -21,7 +20,6 @@ interface CallScreenProps {
 const CallScreen: React.FC<CallScreenProps> = ({ contact, onEnd, phoneStyle }) => {
   const [callTimer, setCallTimer] = useState(0);
   const [isActive, setIsActive] = useState(false);
-  const [sliderValue, setSliderValue] = useState([0]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -63,15 +61,6 @@ const CallScreen: React.FC<CallScreenProps> = ({ contact, onEnd, phoneStyle }) =
     }
   };
 
-  const handleSliderChange = (value: number[]) => {
-    setSliderValue(value);
-    if (value[0] === 100) {
-      handleAnswer();
-    } else if (value[0] === 0) {
-      onEnd();
-    }
-  };
-
   const styles = {
     android: {
       container: "fixed inset-0 bg-gradient-to-b from-gray-900 to-gray-800",
@@ -88,9 +77,6 @@ const CallScreen: React.FC<CallScreenProps> = ({ contact, onEnd, phoneStyle }) =
       name: "text-3xl font-semibold text-white",
       number: "text-gray-400 text-lg",
       timer: "text-gray-400",
-      slider: "relative w-64 h-14 bg-white/10 rounded-full backdrop-blur-md",
-      sliderTrack: "h-14 bg-green-500/20",
-      sliderThumb: "block h-12 w-12 rounded-full bg-white shadow-lg flex items-center justify-center"
     }
   };
 
@@ -98,7 +84,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ contact, onEnd, phoneStyle }) =
 
   return (
     <div className={cn(
-      "flex flex-col items-center justify-between p-8 text-white min-h-screen",
+      "flex flex-col items-center justify-between p-8 text-white",
       currentStyle.container
     )}>
       <audio
@@ -123,24 +109,9 @@ const CallScreen: React.FC<CallScreenProps> = ({ contact, onEnd, phoneStyle }) =
         )}
       </div>
       
-      <div className="flex flex-col items-center space-y-8 mb-16">
-        {!isActive && phoneStyle === 'iphone' ? (
-          <div className="relative flex flex-col items-center space-y-4">
-            <Slider
-              defaultValue={[0]}
-              max={100}
-              step={1}
-              value={sliderValue}
-              onValueChange={handleSliderChange}
-              className="w-64"
-            />
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <ArrowRight className="w-6 h-6 text-white/50" />
-            </div>
-            <p className="text-sm text-white/70">slide to answer</p>
-          </div>
-        ) : !isActive && phoneStyle === 'android' ? (
-          <div className="flex justify-around w-full max-w-md">
+      <div className="flex justify-around w-full max-w-md mb-16">
+        {!isActive ? (
+          <>
             <button
               onClick={onEnd}
               className={cn(
@@ -159,7 +130,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ contact, onEnd, phoneStyle }) =
             >
               <Phone className="w-8 h-8" />
             </button>
-          </div>
+          </>
         ) : (
           <button
             onClick={onEnd}
